@@ -82,7 +82,7 @@ class PluginManager {
 #else
 class PluginManager {
     public:
-        virtual MMFSettingsHandler* __stdcall GetMMFSettingsHandler(MMFSettingsHandler *);
+        virtual MMFSettingsHandler* __stdcall GetMMFSettingsHandler();
         virtual void * __stdcall GetHWND();
         virtual void * __stdcall GetDirect3D8Device();
         virtual Console* __stdcall GetConsole();

@@ -59,12 +59,9 @@ class WindozerNameplate : public PluginBase, private Nameplate {
         }
 
         virtual bool GetConfigPath(wchar_t path[UNICODE_MAX_PATH]) override {
-            MMFSettingsHandler settings;
+            MMFSettingsHandler* settings = pPluginManager->GetMMFSettingsHandler();
 
-            memset(&settings, 0, sizeof(settings));
-            pPluginManager->GetMMFSettingsHandler(&settings);
-
-            StringCchPrintfW(path, UNICODE_MAX_PATH, L"%S\\plugins\\settings", settings.WindowerPath);
+            StringCchPrintfW(path, UNICODE_MAX_PATH, L"%S\\plugins\\settings", settings->WindowerPath);
 
             return true;
         }
