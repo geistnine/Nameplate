@@ -31,21 +31,33 @@ enum class NAME_MODE {
     MAX = HIDE_NPCSELF,
 };
 
+enum class FONT_SCALE_MODE {
+    PIXEL,
+    SCALE_FACTOR,
+};
+
 enum class MESSAGE : uint32_t {
     PLUGIN_LOAD_ERROR,
     PLUGIN_UNLOAD_ERROR,
 
     SHORT_HELP,
     LONG_HELP,
+    COMMAND_HELP,
+    CURRENT_SETTINGS,
     LOAD_ERROR,
     LOAD_COMMAND_ERROR,
     SAVE_ERROR,
     SAVE_COMMAND_ERROR,
     FONT_SIZE_COMMAND_ERROR,
     DAMAGE_FONT_SIZE_COMMAND_ERROR,
+    FONT_SCALE_X_COMMAND_ERROR,
+    FONT_SCALE_Y_COMMAND_ERROR,
+    DAMAGE_FONT_SCALE_X_COMMAND_ERROR,
+    DAMAGE_FONT_SCALE_Y_COMMAND_ERROR,
     SHOW_STARS_COMMAND_ERROR,
     HIDE_STARS_COMMAND_ERROR,
     MODE_COMMAND_ERROR,
+    FONT_SCALE_MODE_COMMAND_ERROR,
 
     MESSAGE_MAX,
 };
@@ -53,9 +65,43 @@ enum class MESSAGE : uint32_t {
 class NameplateSettings {
     friend class Nameplate;
     public:
+        double GetFontSize() {
+            return FontSize;
+        }
+        double GetDamageFontSize() {
+            return DamageFontSize;
+        }
+        double GetFontScaleX() {
+            return FontScaleX;
+        }
+        double GetFontScaleY() {
+            return FontScaleY;
+        }
+        double GetDamageScaleX() {
+            return DamageScaleX;
+        }
+        double GetDamageScaleY() {
+            return DamageScaleY;
+        }
+        FONT_SCALE_MODE GetScaleMode() {
+            return ScaleMode;
+        }
+        bool GetHideStars() {
+            return HideStars != 0;
+        }
+        NAME_MODE GetNameMode() {
+            return NameMode;
+        }
+
+    private:
         NameplateSettings() :
             FontSize(0),
             DamageFontSize(0),
+            FontScaleX(0),
+            FontScaleY(0),
+            DamageScaleX(0),
+            DamageScaleY(0),
+            ScaleMode(FONT_SCALE_MODE::PIXEL),
             HideStars(0),
             NameMode(NAME_MODE::ALL) {}
 
@@ -63,11 +109,26 @@ class NameplateSettings {
         int Load(const wchar_t* basePath);
         int Save(const wchar_t* basePath);
 
-        void SetFontSize(int fontSize) {
+        void SetFontSize(double fontSize) {
             FontSize = fontSize;
         }
-        void SetDamageFontSize(int fontSize) {
+        void SetDamageFontSize(double fontSize) {
             DamageFontSize = fontSize;
+        }
+        void SetFontScaleX(double x) {
+            FontScaleX = x;
+        }
+        void SetFontScaleY(double y) {
+            FontScaleY = y;
+        }
+        void SetDamageScaleX(double x) {
+            DamageScaleX = x;
+        }
+        void SetDamageScaleY(double y) {
+            DamageScaleY = y;
+        }
+        void SetScaleMode(FONT_SCALE_MODE scaleMode) {
+            ScaleMode = scaleMode;
         }
         void SetHideStars(int hideStars) {
             HideStars = hideStars;
@@ -76,12 +137,17 @@ class NameplateSettings {
             NameMode = nameMode;
         }
 
-    private:
         void Flush();
         void Normalize();
 
-        int FontSize;
-        int DamageFontSize;
+        double FontSize;
+        double DamageFontSize;
+        double FontScaleX;
+        double FontScaleY;
+        double DamageScaleX;
+        double DamageScaleY;
+        FONT_SCALE_MODE ScaleMode;
+
         int HideStars;
         NAME_MODE NameMode;
 };
@@ -103,6 +169,6 @@ class Nameplate {
 
         bool ParseCommand(const char* cmd, bool includesName);
 
-    private:
+    protected:
         NameplateSettings Settings;
 };

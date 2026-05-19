@@ -22,11 +22,9 @@ extern "C" {
 
 #define DllExport /*__declspec(dllexport)*/
 
-DllExport double __stdcall expGetInterfaceVersion(void);
-
-DllExport IPlugin* __stdcall expCreatePlugin(const char* args);
-
-DllExport void __stdcall expDestroyPlugin(void* instance);
+DllExport double __stdcall GetInterfaceVersion(void);
+DllExport void __stdcall CreatePluginInfo(plugininfo_t* info);
+DllExport IPlugin* __stdcall CreatePlugin(void);
 
 #ifdef __cplusplus
 };

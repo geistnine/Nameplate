@@ -19,6 +19,8 @@ If not, see <https://www.gnu.org/licenses/>.
 #include <stdlib.h>
 #include <ctype.h>
 
+#include <algorithm>
+
 #include "Nameplate.h"
 
 #include "bytes/bytes.h"
@@ -183,8 +185,13 @@ static struct {
 } Globals;
 
 static struct {
-	int FontSize;
-	int DamageFontSize;
+	double FontSize;
+	double DamageFontSize;
+	double FontScaleX;
+	double FontScaleY;
+	double DamageScaleX;
+	double DamageScaleY;
+	FONT_SCALE_MODE ScaleMode;
 	int HideStars;
 	NAME_MODE NameMode;
 } AsmSettings;
@@ -193,20 +200,35 @@ static void __fastcall GetNameplateScale(float* wh, const float* pS) {
 	if (Globals.pgGame != nullptr) {
 		auto gGame = *Globals.pgGame;
 
-		double bkgW = gGame->BackgroundWidth;
-		double bkgH = gGame->BackgroundHeight;
-		double winW = *Globals.pWindowWidth;
-		double winH = *Globals.pWindowHeight;
+		if (AsmSettings.ScaleMode == FONT_SCALE_MODE::SCALE_FACTOR) {
+			double bkgW = gGame->BackgroundWidth;
+			double bkgH = gGame->BackgroundHeight;
+			double winW = *Globals.pWindowWidth;
+			double winH = *Globals.pWindowHeight;
 
-		double wRatio = bkgW / winW;
-		double hRatio = bkgH / winH;
+			double wRatio = bkgW / winW;
+			double hRatio = bkgH / winH;
 
-		double s = *pS;
+			double s = *pS;
 
-		double FontScale = (double) AsmSettings.FontSize / 11.0;
+			wh[0] = static_cast<float>(AsmSettings.FontScaleX * wRatio * s);
+			wh[1] = static_cast<float>(AsmSettings.FontScaleY * hRatio * s);
+		} else {
+			double bkgW = gGame->BackgroundWidth;
+			double bkgH = gGame->BackgroundHeight;
+			double winW = *Globals.pWindowWidth;
+			double winH = *Globals.pWindowHeight;
 
-		wh[0] = static_cast<float>(FontScale * wRatio * s);
-		wh[1] = static_cast<float>(FontScale * hRatio * s);
+			double wRatio = bkgW / winW;
+			double hRatio = bkgH / winH;
+
+			double s = *pS;
+
+			double FontScale = AsmSettings.FontSize / 11.0;
+
+			wh[0] = static_cast<float>(FontScale * wRatio * s);
+			wh[1] = static_cast<float>(FontScale * hRatio * s);
+		}
 	}
 }
 
@@ -214,21 +236,36 @@ static void __fastcall GetDamageNumberScale(float* wh, const float* pS) {
 	if (Globals.pgGame != nullptr) {
 		auto gGame = *Globals.pgGame;
 
-		double bkgW = gGame->BackgroundWidth;
-		double bkgH = gGame->BackgroundHeight;
-		double winW = *Globals.pWindowWidth;
-		double winH = *Globals.pWindowHeight;
+		if (AsmSettings.ScaleMode == FONT_SCALE_MODE::SCALE_FACTOR) {
+			double bkgW = gGame->BackgroundWidth;
+			double bkgH = gGame->BackgroundHeight;
+			double winW = *Globals.pWindowWidth;
+			double winH = *Globals.pWindowHeight;
 
-		double wRatio = bkgW / winW;
-		double hRatio = bkgH / winH;
+			double wRatio = bkgW / winW;
+			double hRatio = bkgH / winH;
 
-		double s = *pS;
+			double s = *pS;
 
-		// Using the same scale factor seems to look correct.
-		double FontScale = (double) AsmSettings.DamageFontSize / 11.0;
+			wh[0] = static_cast<float>(AsmSettings.DamageScaleX * wRatio * s);
+			wh[1] = static_cast<float>(AsmSettings.DamageScaleY * hRatio * s);
+		} else {
+			double bkgW = gGame->BackgroundWidth;
+			double bkgH = gGame->BackgroundHeight;
+			double winW = *Globals.pWindowWidth;
+			double winH = *Globals.pWindowHeight;
 
-		wh[0] = static_cast<float>(FontScale * wRatio * s);
-		wh[1] = static_cast<float>(FontScale * hRatio * s);
+			double wRatio = bkgW / winW;
+			double hRatio = bkgH / winH;
+
+			double s = *pS;
+
+			// Using the same scale factor seems to look correct.
+			double FontScale = AsmSettings.DamageFontSize / 11.0;
+
+			wh[0] = static_cast<float>(FontScale * wRatio * s);
+			wh[1] = static_cast<float>(FontScale * hRatio * s);
+		}
 	}
 }
 
@@ -292,24 +329,24 @@ static bool __fastcall ShouldDrawNameplate(const XiModel* pModel) {
 void NameplateSettings::Flush() {
 	AsmSettings.FontSize = FontSize;
 	AsmSettings.DamageFontSize = DamageFontSize;
+	AsmSettings.FontScaleX = FontScaleX;
+	AsmSettings.FontScaleY = FontScaleY;
+	AsmSettings.DamageScaleX = DamageScaleX;
+	AsmSettings.DamageScaleY = DamageScaleY;
+	AsmSettings.ScaleMode = ScaleMode;
 	AsmSettings.HideStars = HideStars;
 	AsmSettings.NameMode = NameMode;
 }
 
 void NameplateSettings::Normalize() {
-	if (FontSize < 1) {
-		FontSize = 1;
-	}
-	if (FontSize > 256) {
-		FontSize = 256;
-	}
+	FontSize = std::clamp(FontSize, 1.0, 256.0);
+	DamageFontSize = std::clamp(DamageFontSize, 1.0, 256.0);
+	FontScaleX = std::clamp(FontScaleX, 0.1, 32.0);
+	FontScaleY = std::clamp(FontScaleY, 0.1, 32.0);
+	DamageScaleX = std::clamp(DamageScaleX, 0.1, 32.0);
+	DamageScaleY = std::clamp(DamageScaleY, 0.1, 32.0);
 
-	if (DamageFontSize < 1) {
-		DamageFontSize = 1;
-	}
-	if (DamageFontSize > 256) {
-		DamageFontSize = 256;
-	}
+	ScaleMode = std::clamp(ScaleMode, FONT_SCALE_MODE::PIXEL, FONT_SCALE_MODE::SCALE_FACTOR);
 
 	HideStars = (HideStars != 0) ? 1 : 0;
 
@@ -325,6 +362,10 @@ int NameplateSettings::Init() {
 
 	FontSize = 22;
 	DamageFontSize = 22;
+	FontScaleX = 2.0;
+	FontScaleY = 2.0;
+	DamageScaleX = 2.0;
+	DamageScaleY = 2.0;
 	HideStars = 0;
 	NameMode = NAME_MODE::ALL;
 
@@ -356,10 +397,10 @@ int NameplateSettings::Save(const wchar_t* basePath) {
 
 	wchar_t buf[256];
 
-	StringCbPrintfW(buf, sizeof(buf), L"%d", FontSize);
+	StringCbPrintfW(buf, sizeof(buf), L"%f", FontSize);
 	WritePrivateProfileStringW(L"Settings", L"FontSizeInPx", buf, path);
 
-	StringCbPrintfW(buf, sizeof(buf), L"%d", DamageFontSize);
+	StringCbPrintfW(buf, sizeof(buf), L"%f", DamageFontSize);
 	WritePrivateProfileStringW(L"Settings", L"DamageFontSizeInPx", buf, path);
 
 	StringCbPrintfW(buf, sizeof(buf), L"%d", HideStars);
@@ -434,21 +475,28 @@ bool Nameplate::ParseCommand(const char* cmd, bool includesName) {
 	}
 
 	// help
+	// commands
 	// load
 	// save
 	// fontsizeinpx <num>
 	// damagefontsizeinpx <num>
-	// hidestars
+	// fontscalex <num>
+	// fontscaley <num>
+	// damagefontscalex <num>
+	// damagefontscaley <num>
 	// showstars
-	// mode all
-	// mode none
-	// mode hideself
-	// mode hidepc
+	// hidestars
+	// mode all|none|hideself|hidepc|hidepcself|hidenpc|hidenpcself
+	// scalemode pixel|scale
 
 	int ret = 0;
 
-	if (eat_space_token_match_and_advance(cmd, "help", __builtin_strlen("help"))) {
+	if (eat_space_and_is_end(cmd)) {
 		ShowMessage(MESSAGE::LONG_HELP);
+	} else if (eat_space_token_match_and_advance(cmd, "help", __builtin_strlen("help"))) {
+		ShowMessage(MESSAGE::LONG_HELP);
+	} else if (eat_space_token_match_and_advance(cmd, "commands", __builtin_strlen("commands"))) {
+		ShowMessage(MESSAGE::COMMAND_HELP);
 	} else if (eat_space_token_match_and_advance(cmd, "load", __builtin_strlen("load"))) {
 		if (eat_space_and_is_end(cmd)) {
 			ret = LoadSettings();
@@ -475,14 +523,14 @@ bool Nameplate::ParseCommand(const char* cmd, bool includesName) {
 
 		char* cmd_end = const_cast<char*>(cmd);
 
-		unsigned long val = strtoul(cmd, &cmd_end, 10);
+		double val = strtod(cmd, &cmd_end);
 
 		cmd = cmd_end;
 
-		if (val == 0 || val > 256 || errno != 0 || !eat_space_and_is_end(cmd)) {
+		if (val <= 1.0 || val > 256.0 || errno != 0 || !eat_space_and_is_end(cmd)) {
 			ShowMessage(MESSAGE::FONT_SIZE_COMMAND_ERROR);
 		} else {
-			Settings.SetFontSize(static_cast<int>(val));
+			Settings.SetFontSize(val);
 			Settings.Flush();
 			// update not necessary in this path
 		}
@@ -493,14 +541,80 @@ bool Nameplate::ParseCommand(const char* cmd, bool includesName) {
 
 		char* cmd_end = const_cast<char*>(cmd);
 
-		unsigned long val = strtoul(cmd, &cmd_end, 10);
+		double val = strtod(cmd, &cmd_end);
 
 		cmd = cmd_end;
 
-		if (val == 0 || val > 256 || errno != 0 || !eat_space_and_is_end(cmd)) {
+		if (val <= 1.0 || val > 256.0 || errno != 0 || !eat_space_and_is_end(cmd)) {
 			ShowMessage(MESSAGE::DAMAGE_FONT_SIZE_COMMAND_ERROR);
 		} else {
-			Settings.SetDamageFontSize(static_cast<int>(val));
+			Settings.SetDamageFontSize(val);
+			Settings.Flush();
+			// update not necessary in this path
+		}
+	} else if (eat_space_token_match_and_advance(cmd, "fontscalex", __builtin_strlen("fontscalex"))) {
+		errno = 0;
+
+		char* cmd_end = const_cast<char*>(cmd);
+
+		double val = strtod(cmd, &cmd_end);
+
+		cmd = cmd_end;
+
+		if (val < 0.1 || val > 32.0 || errno != 0 || !eat_space_and_is_end(cmd)) {
+			ShowMessage(MESSAGE::FONT_SCALE_X_COMMAND_ERROR);
+		} else {
+			Settings.SetFontScaleX(val);
+			Settings.Flush();
+			// update not necessary in this path
+		}
+	} else if (eat_space_token_match_and_advance(cmd, "fontscaley", __builtin_strlen("fontscaley"))) {
+		errno = 0;
+
+		char* cmd_end = const_cast<char*>(cmd);
+
+		double val = strtod(cmd, &cmd_end);
+
+		cmd = cmd_end;
+
+		if (val < 0.1 || val > 32.0 || errno != 0 || !eat_space_and_is_end(cmd)) {
+			ShowMessage(MESSAGE::FONT_SCALE_Y_COMMAND_ERROR);
+		} else {
+			Settings.SetFontScaleY(val);
+			Settings.Flush();
+			// update not necessary in this path
+		}
+	} else if (eat_space_token_match_and_advance(cmd, "damagefontscalex", __builtin_strlen("damagefontscalex"))
+			|| eat_space_token_match_and_advance(cmd, "dmgfontscalex", __builtin_strlen("dmgfontscalex"))) {
+		errno = 0;
+
+		char* cmd_end = const_cast<char*>(cmd);
+
+		double val = strtod(cmd, &cmd_end);
+
+		cmd = cmd_end;
+
+		if (val < 0.1 || val > 32.0 || errno != 0 || !eat_space_and_is_end(cmd)) {
+			ShowMessage(MESSAGE::DAMAGE_FONT_SCALE_X_COMMAND_ERROR);
+		} else {
+			Settings.SetDamageScaleX(val);
+			Settings.Flush();
+			// update not necessary in this path
+		}
+	} else if (eat_space_token_match_and_advance(cmd, "damagefontscaley", __builtin_strlen("damagefontscaley"))
+			|| eat_space_token_match_and_advance(cmd, "dmgfontscaley", __builtin_strlen("dmgfontscaley"))) {
+		errno = 0;
+
+		char* cmd_end = const_cast<char*>(cmd);
+
+		double val = strtod(cmd, &cmd_end);
+
+		cmd = cmd_end;
+
+		if (val < 0.1 || val > 32.0 || errno != 0 || !eat_space_and_is_end(cmd)) {
+			ShowMessage(MESSAGE::DAMAGE_FONT_SCALE_Y_COMMAND_ERROR);
+		} else {
+			Settings.SetDamageScaleY(val);
 			Settings.Flush();
 			// update not necessary in this path
 		}
@@ -548,6 +662,25 @@ bool Nameplate::ParseCommand(const char* cmd, bool includesName) {
 			// update not necessary in this path
 		} else {
 			ShowMessage(MESSAGE::MODE_COMMAND_ERROR);
+		}
+	} else if (eat_space_token_match_and_advance(cmd, "scalemode", __builtin_strlen("scalemode"))) {
+		FONT_SCALE_MODE ScaleMode = FONT_SCALE_MODE::PIXEL;
+		bool cmdError = false;
+
+		if (eat_space_token_match_and_advance(cmd, "pixel", __builtin_strlen("pixel"))) {
+			ScaleMode = FONT_SCALE_MODE::PIXEL;
+		} else if (eat_space_token_match_and_advance(cmd, "scale", __builtin_strlen("scale"))) {
+			ScaleMode = FONT_SCALE_MODE::SCALE_FACTOR;
+		} else {
+			cmdError = true;
+		}
+
+		if (!cmdError && eat_space_and_is_end(cmd)) {
+			Settings.SetScaleMode(ScaleMode);
+			Settings.Flush();
+			// update not necessary in this path
+		} else {
+			ShowMessage(MESSAGE::FONT_SCALE_MODE_COMMAND_ERROR);
 		}
 	} else {
 		ShowMessage(MESSAGE::SHORT_HELP);

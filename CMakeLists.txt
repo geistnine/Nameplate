@@ -1,7 +1,7 @@
-cmake_minimum_required(VERSION 3.28)
+cmake_minimum_required(VERSION 4.2.1)
 
 project(Nameplate
-    VERSION 0.51
+    VERSION 0.60
     LANGUAGES CXX
     DESCRIPTION "Corrects defects in nameplate rendering."
     HOMEPAGE_URL "https://www.github.com/Shirk/Nameplate"
@@ -10,15 +10,21 @@ project(Nameplate
 # set(ASHITA_SDK_PATH "../Ashita v4 SDK 4.11/plugins/sdk" CACHE STRING "Ashita SDK Path")
 # set(ASHITA_SDK_PATH "../Ashita v4 SDK 4.14/plugins/sdk" CACHE STRING "Ashita SDK Path")
 # set(ASHITA_SDK_PATH "../Ashita v4 SDK 4.15/plugins/sdk" CACHE STRING "Ashita SDK Path")
-set(ASHITA_SDK_PATH "../Ashita v4 SDK 4.16/plugins/sdk" CACHE STRING "Ashita SDK Path")
+# set(ASHITA_SDK_PATH "../Ashita v4 SDK 4.16/plugins/sdk" CACHE STRING "Ashita SDK Path")
+# set(ASHITA_SDK_PATH "../Ashita v4 SDK 4.30/plugins/sdk" CACHE STRING "Ashita SDK Path")
+set(ASHITA_SDK_PATH "../Ashita-v3/plugins" CACHE STRING "Ashita SDK Path")
 
-set(CMAKE_C_STANDARD 17)
-set(CMAKE_C_STANDARD_REQUIRED True)
-set(CMAKE_C_EXTENSIONS OFF)
+# Plugin environment:
+# ASHITA_V3
+# ASHITA_V4 (also includes Windozer) (default)
+# WINDOWER_V4 (please reach out so that this can happen in a way agreeable to all, especially your users)
+set(TARGET_PLATFORMS "ASHITA_V3" "ASHITA_V4" "WINDOWER_V4")
+set(TARGET_PLATFORM "ASHITA_V3" CACHE STRING "Target Plugin Platform")
+set_property(CACHE TARGET_PLATFORM PROPERTY STRINGS TARGET_PLATFORMS)
 
-set(CMAKE_CXX_STANDARD 23)
-set(CMAKE_CXX_STANDARD_REQUIRED True)
-set(CMAKE_CXX_EXTENSIONS OFF)
+if(NOT TARGET_PLATFORM IN_LIST TARGET_PLATFORMS)
+    message(FATAL_ERROR "TARGET_PLATFORM \"${TARGET_PLATFORM}\" is not supported. TARGET_PLATFORM must be one of: ${TARGET_PLATFORMS}")
+endif()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS True)
 
@@ -26,26 +32,54 @@ configure_file(${CMAKE_CURRENT_SOURCE_DIR}/src/versioninfo.rc.in versioninfo.rc 
 
 add_library(Nameplate SHARED)
 
-target_sources(Nameplate PUBLIC
+set_target_properties(Nameplate PROPERTIES
+  C_STANDARD 23
+  C_STANDARD_REQUIRED True
+  C_EXTENSIONS OFF
+  CXX_STANDARD 26
+  CXX_STANDARD_REQUIRED True
+  CXX_EXTENSIONS OFF
+)
+
+target_compile_features(Nameplate PRIVATE cxx_std_26)
+
+target_sources(Nameplate PRIVATE
     src/Nameplate.cpp
     src/Nameplate.h
 
-    src/Ashita/Ashita.cpp
-    src/Ashita/exports.h
-
-    src/Windozer/Windozer.cpp
-    src/Windozer/Windozer.h
-
-    src/exports.def
     "${CMAKE_CURRENT_BINARY_DIR}/versioninfo.rc"
 
-    PUBLIC FILE_SET CXX_MODULES FILES
-    src/findsignature.cppm
-    )
+    PRIVATE FILE_SET CXX_MODULES FILES
+    src/findsignature.cppm)
+
+if(TARGET_PLATFORM STREQUAL "ASHITA_V4")
+    target_sources(Nameplate PRIVATE
+        src/Ashita/Ashita.cpp
+        src/Ashita/exports.h
+
+        src/Windozer/Windozer.cpp
+        src/Windozer/Windozer.h
+
+        src/exports.def)
+elseif(TARGET_PLATFORM STREQUAL "ASHITA_V3")
+    target_sources(Nameplate PRIVATE
+        src/Ashita-v3/Ashita.cpp
+        src/Ashita-v3/exports.h
+
+        src/Ashita-v3/exports.def)
+elseif(TARGET_PLATFORM STREQUAL "WINDOWER_V4")
+    target_sources(Nameplate PRIVATE
+        # this does not exist, but it could~
+        src/Windower/Windower.cpp
+        src/Windower/Windower.h
+
+        src/Windower/exports.def)
+endif()
 
 target_include_directories(Nameplate PRIVATE ${ASHITA_SDK_PATH})
 target_compile_definitions(Nameplate PRIVATE WIN32_LEAN_AND_MEAN)
-set_property(TARGET Nameplate PROPERTY INTERPROCEDURAL_OPTIMIZATION TRUE)
+set_target_properties(Nameplate PROPERTIES INTERPROCEDURAL_OPTIMIZATION_RELEASE TRUE)
+set_target_properties(Nameplate PROPERTIES INTERPROCEDURAL_OPTIMIZATION_MINSIZEREL TRUE)
 
 if(MSVC)
     target_compile_options(Nameplate PRIVATE /EHa /W4)

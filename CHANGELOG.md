@@ -1,5 +1,13 @@
 # Changelog
 
+## 0.60 - 2026-01-01
+
+Add Ashita v3 version
+
+Add support for the next version of the Ashita v4 beta
+
+Add fractional font scaling support
+
 ## 0.51 - 2024-06-09
 
 Add support for client version 30240604_1 ("June 10, 2024 (JST) Version Update")

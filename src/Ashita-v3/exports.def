@@ -1,0 +1,6 @@
+LIBRARY "Nameplate"
+VERSION 0.60
+EXPORTS
+    GetInterfaceVersion
+    CreatePluginInfo
+    CreatePlugin

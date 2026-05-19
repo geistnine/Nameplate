@@ -17,6 +17,13 @@ If not, see <https://www.gnu.org/licenses/>.
 
 #include <inttypes.h>
 
+#ifdef __cplusplus
+#include <bit>
+
+[[maybe_unused]] static constexpr float i2f(uint32_t i) {
+    return std::bit_cast<float>(i);
+}
+#else
 [[maybe_unused]] static inline float i2f(uint32_t i) {
     union p {
         uint32_t i;
@@ -24,6 +31,7 @@ If not, see <https://www.gnu.org/licenses/>.
     };
     return ((union p){ .i = i }).f;
 }
+#endif
 
 #define GET_VARARGS_MACRO3(_1, _2, _3, MACRO_NAME, ...) MACRO_NAME
 

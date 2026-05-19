@@ -83,7 +83,7 @@ const char* AshitaNameplate::GetLink(void) const {
 }
 
 double AshitaNameplate::GetVersion(void) const {
-    return 0.51;
+    return 0.60;
 }
 
 double AshitaNameplate::GetInterfaceVersion(void) const {
@@ -128,111 +128,195 @@ bool AshitaNameplate::HandleCommand([[maybe_unused]] int32_t mode, const char* c
     return ParseCommand(command, true);
 }
 
-typedef void (*ShowMessageCallback)(IChatManager*, MESSAGE, int);
-
-static void AshitaPluginLoadError(IChatManager* chat, [[maybe_unused]] MESSAGE message, int param) {
-    chat->Writef(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x44Plugin load failed with error code \x1e\x05%d\x1e\x44!", param);
-}
-
-static void AshitaPluginUnloadError(IChatManager* chat, [[maybe_unused]] MESSAGE message, int param) {
-    chat->Writef(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x44Plugin unload failed with error code \x1e\x05%d\x1e\x44!", param);
-}
-
-static void AshitaShortHelp(IChatManager* chat, [[maybe_unused]] MESSAGE message, [[maybe_unused]] int param) {
-    chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x44Unknown command, please consult \x1e\x6a/nameplate help\x1e\x44 for more information.");
-}
-
-static void AshitaLongHelp(IChatManager* chat, [[maybe_unused]] MESSAGE message, [[maybe_unused]] int param) {
-    chat->Write(0, false, "\x1e\x05Nameplate v0.51");
-    chat->Write(0, false, "\x1e\x05https://www.github.com/Shirk/Nameplate");
-    chat->Write(0, false, "\x1e\x6aUsage:");
-    chat->Write(0, false, "\x1e\x6a/nameplate help");
-    chat->Write(0, true , "You're reading it!");
-    chat->Write(0, false, "\x1e\x6a/nameplate load");
-    chat->Write(0, true , "Load configuration from\x1e\x6a config\\nameplate\\defaults.ini");
-    chat->Write(0, false, "\x1e\x6a/nameplate save");
-    chat->Write(0, true , "Save current configuration to\x1e\x6a config\\nameplate\\defaults.ini");
-    chat->Write(0, false, "\x1e\x6a/nameplate fontsize\x1e\x6a <number>");
-    chat->Write(0, true , "Set the nameplate font size to <number> pixels");
-    chat->Write(0, false, "\x1e\x6a/nameplate damagefontsize\x1e\x6a <number>");
-    chat->Write(0, true , "Set the damage font size to <number> pixels");
-    chat->Write(0, false, "\x1e\x6a/nameplate hidestars");
-    chat->Write(0, true , "Hide all Job Mastery stars");
-    chat->Write(0, false, "\x1e\x6a/nameplate showstars");
-    chat->Write(0, true , "Re-enable displaying Job Mastery stars");
-    chat->Write(0, false, "\x1e\x6a/nameplate mode all");
-    chat->Write(0, true , "Show all nameplates");
-    chat->Write(0, false, "\x1e\x6a/nameplate mode none");
-    chat->Write(0, true , "Hide all nameplates");
-    chat->Write(0, false, "\x1e\x6a/nameplate mode hideself");
-    chat->Write(0, true , "Hide your own nameplate");
-    chat->Write(0, false, "\x1e\x6a/nameplate mode hidepc");
-    chat->Write(0, true , "Hide all player nameplates, except when charmed");
-    chat->Write(0, false, "\x1e\x6a/nameplate mode hidepcself");
-    chat->Write(0, true , "Hide all player nameplates, except when charmed, but also keep yours always hidden");
-    chat->Write(0, false, "\x1e\x6a/nameplate mode hidenpc");
-    chat->Write(0, true , "Hide all non-player nameplates");
-    chat->Write(0, false, "\x1e\x6a/nameplate mode hidenpcself");
-    chat->Write(0, true , "Hide all non-player nameplates, but also keep yours always hidden");
-}
-
-static void AshitaLoadError(IChatManager* chat, [[maybe_unused]] MESSAGE message, int param) {
-    chat->Writef(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x44Loading\x1e\x6a config\\nameplate\\defaults.ini\x1e\x44 failed with error code \x1e\x05%d\x1e\x44!", param);
-}
-
-static void AshitaSaveError(IChatManager* chat, [[maybe_unused]] MESSAGE message, int param) {
-    chat->Writef(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x44Saving\x1e\x6a config\\nameplate\\defaults.ini\x1e\x44 failed with error code \x1e\x05%d\x1e\x44!", param);
-}
-
-static void AshitaLoadCommandError(IChatManager* chat, [[maybe_unused]] MESSAGE message, [[maybe_unused]] int param) {
-    chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate load\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
-}
-
-static void AshitaSaveCommandError(IChatManager* chat, [[maybe_unused]] MESSAGE message, [[maybe_unused]] int param) {
-    chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate save\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
-}
-
-static void AshitaFontSizeCommandError(IChatManager* chat, [[maybe_unused]] MESSAGE message, [[maybe_unused]] int param) {
-    chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate fontsize\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
-}
-
-static void AshitaDamageFontSizeCommandError(IChatManager* chat, [[maybe_unused]] MESSAGE message, [[maybe_unused]] int param) {
-    chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate damagefontsize\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
-}
-
-static void AshitaShowStarsCommandError(IChatManager* chat, [[maybe_unused]] MESSAGE message, [[maybe_unused]] int param) {
-    chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate showstars\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
-}
-
-static void AshitaHideStarsCommandError(IChatManager* chat, [[maybe_unused]] MESSAGE message, [[maybe_unused]] int param) {
-    chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate hidestars\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
-}
-
-static void AshitaModeCommandError(IChatManager* chat, [[maybe_unused]] MESSAGE message, [[maybe_unused]] int param) {
-    chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate mode\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
-}
-
-static constexpr ShowMessageCallback AshitaMessages[/*MESSAGE::MESSAGE_MAX*/] = {
-    /*[MESSAGE::PLUGIN_LOAD_ERROR]              = */ AshitaPluginLoadError,
-    /*[MESSAGE::PLUGIN_UNLOAD_ERROR]            = */ AshitaPluginUnloadError,
-    /*[MESSAGE::SHORT_HELP]                     = */ AshitaShortHelp,
-    /*[MESSAGE::LONG_HELP]                      = */ AshitaLongHelp,
-    /*[MESSAGE::LOAD_ERROR]                     = */ AshitaLoadError,
-    /*[MESSAGE::LOAD_COMMAND_ERROR]             = */ AshitaLoadCommandError,
-    /*[MESSAGE::SAVE_ERROR]                     = */ AshitaSaveError,
-    /*[MESSAGE::SAVE_COMMAND_ERROR]             = */ AshitaSaveCommandError,
-    /*[MESSAGE::FONT_SIZE_COMMAND_ERROR]        = */ AshitaFontSizeCommandError,
-    /*[MESSAGE::DAMAGE_FONT_SIZE_COMMAND_ERROR] = */ AshitaDamageFontSizeCommandError,
-    /*[MESSAGE::SHOW_STARS_COMMAND_ERROR]       = */ AshitaShowStarsCommandError,
-    /*[MESSAGE::HIDE_STARS_COMMAND_ERROR]       = */ AshitaHideStarsCommandError,
-    /*[MESSAGE::MODE_COMMAND_ERROR]             = */ AshitaModeCommandError,
-};
-
 void AshitaNameplate::ShowMessage(MESSAGE message, int param) {
-    if ((uint32_t) message < (uint32_t) MESSAGE::MESSAGE_MAX && AshitaMessages[(uint32_t) message] != nullptr) {
-        AshitaMessages[(uint32_t) message](m_AshitaCore->GetChatManager(), message, param);
-    } else {
-        m_AshitaCore->GetChatManager()->Writef(0, false, "\x1e\x44Unknown message %u (%d)", (uint32_t) message, param);
+    auto* chat = m_AshitaCore->GetChatManager();
+
+    switch (message) {
+        case MESSAGE::PLUGIN_LOAD_ERROR: {
+            chat->Writef(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x44Plugin load failed with error code \x1e\x05%d\x1e\x44!", param);
+        }
+        break;
+
+        case MESSAGE::PLUGIN_UNLOAD_ERROR: {
+            chat->Writef(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x44Plugin unload failed with error code \x1e\x05%d\x1e\x44!", param);
+        }
+        break;
+
+        case MESSAGE::SHORT_HELP: {
+            chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x44Unknown command, please consult \x1e\x6a/nameplate help\x1e\x44 for more information.");
+        }
+        break;
+
+        case MESSAGE::LONG_HELP: {
+            chat->Write(0, false, "\x1e\x05Nameplate v0.60");
+            chat->Write(0, false, "\x1e\x05https://www.github.com/Shirk/Nameplate");
+            chat->Write(0, true, "Please visit the Nameplate website");
+            chat->Write(0, true, "for the latest information on how to use the plugin");
+            chat->Write(0, false, "\x1e\x05Use \x1e\x6a/nameplate commands\x1e\x44 to see the list of commands");
+        }
+        break;
+
+        case MESSAGE::COMMAND_HELP: {
+            chat->Write(0, false, "\x1e\x6a/nameplate commands");
+            chat->Write(0, true , "You're reading it!");
+            chat->Write(0, false, "\x1e\x6a/nameplate load");
+            chat->Write(0, true , "Load configuration from\x1e\x6a config\\nameplate\\defaults.ini");
+            chat->Write(0, false, "\x1e\x6a/nameplate save");
+            chat->Write(0, true , "Save current configuration to\x1e\x6a config\\nameplate\\defaults.ini");
+            chat->Write(0, false, "\x1e\x6a/nameplate fontsize\x1e\x6a <number>");
+            chat->Write(0, true , "Set the nameplate font size to <number> pixels");
+            chat->Write(0, false, "\x1e\x6a/nameplate damagefontsize\x1e\x6a <number>");
+            chat->Write(0, true , "Set the damage font size to <number> pixels");
+            chat->Write(0, false, "\x1e\x6a/nameplate fontscalex\x1e\x6a <number>");
+            chat->Write(0, true , "Set the nameplate font X-scale factor to <number>");
+            chat->Write(0, false, "\x1e\x6a/nameplate fontscaley\x1e\x6a <number>");
+            chat->Write(0, true , "Set the nameplate font Y-scale factor to <number>");
+            chat->Write(0, false, "\x1e\x6a/nameplate damagefontscalex\x1e\x6a <number>");
+            chat->Write(0, true , "Set the damage font X-scale factor to <number>");
+            chat->Write(0, false, "\x1e\x6a/nameplate damagefontscaley\x1e\x6a <number>");
+            chat->Write(0, true , "Set the damage font Y-scale factor to <number>");
+            chat->Write(0, false, "\x1e\x6a/nameplate hidestars");
+            chat->Write(0, true , "Hide all Job Mastery stars");
+            chat->Write(0, false, "\x1e\x6a/nameplate showstars");
+            chat->Write(0, true , "Re-enable displaying Job Mastery stars");
+            chat->Write(0, false, "\x1e\x6a/nameplate mode all");
+            chat->Write(0, true , "Show all nameplates");
+            chat->Write(0, false, "\x1e\x6a/nameplate mode none");
+            chat->Write(0, true , "Hide all nameplates");
+            chat->Write(0, false, "\x1e\x6a/nameplate mode hideself");
+            chat->Write(0, true , "Hide your own nameplate");
+            chat->Write(0, false, "\x1e\x6a/nameplate mode hidepc");
+            chat->Write(0, true , "Hide all player nameplates, except when charmed");
+            chat->Write(0, false, "\x1e\x6a/nameplate mode hidepcself");
+            chat->Write(0, true , "Hide all player nameplates, except when charmed, but also keep yours always hidden");
+            chat->Write(0, false, "\x1e\x6a/nameplate mode hidenpc");
+            chat->Write(0, true , "Hide all non-player nameplates");
+            chat->Write(0, false, "\x1e\x6a/nameplate mode hidenpcself");
+            chat->Write(0, true , "Hide all non-player nameplates, but also keep yours always hidden");
+            chat->Write(0, false, "\x1e\x6a/nameplate scalemode pixel");
+            chat->Write(0, true , "Use the original pixel-based scaling mode for the nameplate and damage fonts");
+            chat->Write(0, false, "\x1e\x6a/nameplate scalemode scale");
+            chat->Write(0, true , "Use the X/Y scale factors for the nameplate and damage fonts");
+        }
+        break;
+
+        case MESSAGE::CURRENT_SETTINGS: {
+            chat->Write(0, false, "\x1e\x05Nameplate v0.60");
+            chat->Write(0, false, "\x1e\x05https://www.github.com/Shirk/Nameplate");
+            if (Settings.GetScaleMode() == FONT_SCALE_MODE::PIXEL) {
+                chat->Writef(0, true, "Font Size: \x1e\x05%.1f\x1e\x44 px", Settings.GetFontSize());
+                chat->Writef(0, true, "Damage Font Size: \x1e\x05%.1f\x1e\x44 px", Settings.GetDamageFontSize());
+            } else {
+                chat->Writef(0, true, "Font Scale X: \x1e\x05%.2f", Settings.GetFontScaleX());
+                chat->Writef(0, true, "Font Scale Y: \x1e\x05%.2f", Settings.GetFontScaleY());
+                chat->Writef(0, true, "Damage Font Scale X: \x1e\x05%.2f", Settings.GetDamageScaleX());
+                chat->Writef(0, true, "Damage Font Scale Y: \x1e\x05%.2f", Settings.GetDamageScaleY());
+                chat->Writef(0, true, "Scale Mode: \x1e\x05%s", Settings.GetScaleMode() == FONT_SCALE_MODE::PIXEL ? "pixel" : "scale");
+                chat->Writef(0, true, "Hide Stars: \x1e\x05%s", Settings.GetHideStars() ? "yes" : "no");
+            }
+
+            const char* mode = "unknown";
+            switch (Settings.GetNameMode()) {
+                case NAME_MODE::ALL:
+                    mode = "all";
+                    break;
+                case NAME_MODE::NONE:
+                    mode = "none";
+                    break;
+                case NAME_MODE::HIDE_SELF:
+                    mode = "hideself";
+                    break;
+                case NAME_MODE::HIDE_PC:
+                    mode = "hidepc";
+                    break;
+                case NAME_MODE::HIDE_PCSELF:
+                    mode = "hidepcself";
+                    break;
+                case NAME_MODE::HIDE_NPC:
+                    mode = "hidenpc";
+                    break;
+                case NAME_MODE::HIDE_NPCSELF:
+                    mode = "hidenpcself";
+                    break;
+            }
+            chat->Writef(0, true, "Display Mode: \x1e\x05%s", mode);
+        }
+        break;
+
+        case MESSAGE::LOAD_ERROR: {
+            chat->Writef(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x44Loading\x1e\x6a config\\nameplate\\defaults.ini\x1e\x44 failed with error code \x1e\x05%d\x1e\x44!", param);
+        }
+        break;
+
+        case MESSAGE::LOAD_COMMAND_ERROR: {
+            chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate load\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
+        }
+        break;
+
+        case MESSAGE::SAVE_ERROR: {
+            chat->Writef(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x44Saving\x1e\x6a config\\nameplate\\defaults.ini\x1e\x44 failed with error code \x1e\x05%d\x1e\x44!", param);
+        }
+        break;
+
+        case MESSAGE::SAVE_COMMAND_ERROR: {
+            chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate save\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
+        }
+        break;
+
+        case MESSAGE::FONT_SIZE_COMMAND_ERROR: {
+            chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate fontsize\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
+        }
+        break;
+
+        case MESSAGE::DAMAGE_FONT_SIZE_COMMAND_ERROR: {
+            chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate damagefontsize\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
+        }
+        break;
+
+        case MESSAGE::FONT_SCALE_X_COMMAND_ERROR: {
+            chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate fontscalex\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
+        }
+        break;
+
+        case MESSAGE::FONT_SCALE_Y_COMMAND_ERROR: {
+            chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate fontscaley\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
+        }
+        break;
+
+        case MESSAGE::DAMAGE_FONT_SCALE_X_COMMAND_ERROR: {
+            chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate damagefontscalex\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
+        }
+        break;
+
+        case MESSAGE::DAMAGE_FONT_SCALE_Y_COMMAND_ERROR: {
+            chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate damagefontscaley\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
+        }
+        break;
+
+        case MESSAGE::SHOW_STARS_COMMAND_ERROR: {
+            chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate showstars\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
+        }
+        break;
+
+        case MESSAGE::HIDE_STARS_COMMAND_ERROR: {
+            chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate hidestars\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
+        }
+        break;
+
+        case MESSAGE::MODE_COMMAND_ERROR: {
+            chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate mode\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
+        }
+        break;
+
+        case MESSAGE::FONT_SCALE_MODE_COMMAND_ERROR: {
+            chat->Write(0, false, "\x1e\x51[\x1e\x06Nameplate\x1e\x51]\x1e\x01 \x1e\x6a/nameplate scalemode\x1e\x44 command error, please consult \x1e\x6a/nameplate help\x1e\x44 for correct usage.");
+        }
+        break;
+
+        default: {
+            m_AshitaCore->GetChatManager()->Writef(0, false, "\x1e\x44Unknown message %u (%d)", (uint32_t) message, param);
+        }
+        break;
     }
 }
 
@@ -242,4 +326,8 @@ DllExport double __stdcall expGetInterfaceVersion(void) {
 
 DllExport IPlugin* __stdcall expCreatePlugin([[maybe_unused]] const char* args) {
     return new AshitaNameplate();
+}
+
+DllExport void __stdcall expDestroyPlugin(void* instance) {
+    delete reinterpret_cast<AshitaNameplate*>(instance);
 }
