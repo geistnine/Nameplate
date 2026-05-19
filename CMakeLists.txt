@@ -41,8 +41,6 @@ set_target_properties(Nameplate PROPERTIES
   CXX_EXTENSIONS OFF
 )
 
-target_compile_features(Nameplate PRIVATE cxx_std_26)
-
 target_sources(Nameplate PRIVATE
     src/Nameplate.cpp
     src/Nameplate.h
