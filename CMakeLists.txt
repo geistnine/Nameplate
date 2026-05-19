@@ -12,14 +12,14 @@ project(Nameplate
 # set(ASHITA_SDK_PATH "../Ashita v4 SDK 4.15/plugins/sdk" CACHE STRING "Ashita SDK Path")
 # set(ASHITA_SDK_PATH "../Ashita v4 SDK 4.16/plugins/sdk" CACHE STRING "Ashita SDK Path")
 # set(ASHITA_SDK_PATH "../Ashita v4 SDK 4.30/plugins/sdk" CACHE STRING "Ashita SDK Path")
-set(ASHITA_SDK_PATH "../Ashita-v3/plugins" CACHE STRING "Ashita SDK Path")
+set(ASHITA_SDK_PATH "sdk" CACHE STRING "Ashita SDK Path (override with -DASHITA_SDK_PATH=...)")
+message(STATUS "ASHITA_SDK_PATH=${ASHITA_SDK_PATH}")
 
 # Plugin environment:
 # ASHITA_V3
 # ASHITA_V4 (also includes Windozer) (default)
-# WINDOWER_V4 (please reach out so that this can happen in a way agreeable to all, especially your users)
-set(TARGET_PLATFORMS "ASHITA_V3" "ASHITA_V4" "WINDOWER_V4")
-set(TARGET_PLATFORM "ASHITA_V3" CACHE STRING "Target Plugin Platform")
+set(TARGET_PLATFORMS "ASHITA_V3" "ASHITA_V4")
+set(TARGET_PLATFORM "ASHITA_V4" CACHE STRING "Target Plugin Platform")
 set_property(CACHE TARGET_PLATFORM PROPERTY STRINGS TARGET_PLATFORMS)
 
 if(NOT TARGET_PLATFORM IN_LIST TARGET_PLATFORMS)
@@ -67,13 +67,6 @@ elseif(TARGET_PLATFORM STREQUAL "ASHITA_V3")
         src/Ashita-v3/exports.h
 
         src/Ashita-v3/exports.def)
-elseif(TARGET_PLATFORM STREQUAL "WINDOWER_V4")
-    target_sources(Nameplate PRIVATE
-        # this does not exist, but it could~
-        src/Windower/Windower.cpp
-        src/Windower/Windower.h
-
-        src/Windower/exports.def)
 endif()
 
 target_include_directories(Nameplate PRIVATE ${ASHITA_SDK_PATH})

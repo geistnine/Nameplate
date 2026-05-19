@@ -17,7 +17,7 @@ If not, see <https://www.gnu.org/licenses/>.
 #include <inttypes.h>
 
 #if !defined(WINDOZER_INTERFACE_VERSION)
-#define WINDOZER_INTERFACE_VERSION 0x04070000
+#define WINDOZER_INTERFACE_VERSION 0x04070300
 #endif
 
 typedef uint8_t undefined;
